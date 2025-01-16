@@ -22,10 +22,8 @@ pub fn consume_next_card<R: Read>(
     buf: &mut [u8; 80],
     bytes_read: &mut usize,
 ) -> Result<(), Error> {
+    reader.read_exact(buf)?;
     *bytes_read += 80;
-    reader
-        .read_exact(buf)
-        .map_err(|_| Error::FailReadingNextBytes)?;
 
     Ok(())
 }
@@ -290,20 +288,22 @@ mod tests {
         assert_eq!(
             parse_generic_card(
                 b"AZSDFGFC=                    T                                                  "
-            ),
-            Ok(Some(Card {
+            )
+            .unwrap(),
+            Some(Card {
                 kw: b"AZSDFGFC".to_owned(),
                 v: Value::Logical(true)
-            }))
+            })
         );
         assert_eq!(
             parse_generic_card(
                 b"CDS_1   =                     T                                                 "
-            ),
-            Ok(Some(Card {
+            )
+            .unwrap(),
+            Some(Card {
                 kw: b"CDS_1   ".to_owned(),
                 v: Value::Logical(true)
-            }))
+            })
         );
     }
 

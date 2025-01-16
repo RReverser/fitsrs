@@ -4,7 +4,7 @@ pub mod data;
 pub mod extension;
 pub mod primary;
 
-use crate::hdu::data::DataBufRead;
+use crate::hdu::data::DataRead;
 
 //use self::data::DataAsyncBufRead;
 use crate::error::Error;
@@ -33,32 +33,33 @@ pub enum HDU {
 }
 
 impl HDU {
-    pub(crate) fn new_xtension<'a, R>(reader: &mut R) -> Result<Self, Error>
+    pub(crate) fn new_xtension<'a, R>(
+        reader: &mut R,
+        num_bytes_read: &mut usize,
+    ) -> Result<Self, Error>
     where
-        R: DataBufRead<'a, Image> + DataBufRead<'a, BinTable> + DataBufRead<'a, AsciiTable> + 'a,
+        R: DataRead<'a, Image> + DataRead<'a, BinTable> + DataRead<'a, AsciiTable> + 'a,
     {
-        let mut num_bytes_read = 0;
-
         let mut card_80_bytes_buf = [0; 80];
 
         // XTENSION
-        consume_next_card(reader, &mut card_80_bytes_buf, &mut num_bytes_read)?;
+        consume_next_card(reader, &mut card_80_bytes_buf, num_bytes_read)?;
         let xtension_type = parse_xtension_card(&card_80_bytes_buf)?;
 
         let hdu = match xtension_type {
             XtensionType::Image => HDU::XImage(fits::HDU::<Image>::new(
                 reader,
-                &mut num_bytes_read,
+                num_bytes_read,
                 &mut card_80_bytes_buf,
             )?),
             XtensionType::BinTable => HDU::XBinaryTable(fits::HDU::<BinTable>::new(
                 reader,
-                &mut num_bytes_read,
+                num_bytes_read,
                 &mut card_80_bytes_buf,
             )?),
             XtensionType::AsciiTable => HDU::XASCIITable(fits::HDU::<AsciiTable>::new(
                 reader,
-                &mut num_bytes_read,
+                num_bytes_read,
                 &mut card_80_bytes_buf,
             )?),
         };
@@ -69,7 +70,7 @@ impl HDU {
     pub(crate) fn new_primary<'a, R>(reader: &mut R) -> Result<Self, Error>
     where
         //R: DataBufRead<'a, Image> + DataBufRead<'a, BinTable> + DataBufRead<'a, AsciiTable> + 'a,
-        R: DataBufRead<'a, Image> + 'a,
+        R: DataRead<'a, Image> + 'a,
     {
         let mut num_bytes_read = 0;
         let mut card_80_bytes_buf = [0; 80];
